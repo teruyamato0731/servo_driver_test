@@ -13,16 +13,38 @@ DigitalIn button{BUTTON1};
 
 // Struct definition
 struct Servo {
+  uint8_t operator=(const uint8_t deg) {
+    return raw_out = deg * 0xff / 180;
+  }
+  uint8_t raw_out;
+};
+struct ServoArray {
   CANMessage to_msg() {
-    return CANMessage{can_id, pwm, sizeof(pwm)};
+    static_assert(sizeof(servo) <= 8);
+    return CANMessage{can_id, reinterpret_cast<const uint8_t*>(servo), sizeof(servo)};
+  }
+  auto begin() {
+    return std::begin(servo);
+  }
+  auto begin() const {
+    return std::begin(servo);
+  }
+  auto end() {
+    return std::end(servo);
+  }
+  auto end() const {
+    return std::end(servo);
+  }
+  auto& operator[](int idx) & {
+    return servo[idx];
   }
 
   uint32_t can_id;
-  uint8_t pwm[8];
+  Servo servo[8];
 };
 
 // Global variable
-Servo servo{servo_can_id};
+ServoArray servo_arr{servo_can_id};
 
 /// @brief The application entry point.
 int main() {
@@ -34,14 +56,14 @@ int main() {
     static auto pre = now;
     if(now - pre > 20ms) {
       if(button) {
-        for(auto& e: servo.pwm) e = 0xff;
+        for(auto& e: servo_arr) e = 180;
       } else {
-        for(auto& e: servo.pwm) e = 0x00;
+        for(auto& e: servo_arr) e = 0;
       }
-      const auto msg = servo.to_msg();
+      for(auto e: servo_arr) printf("%02x ", e.raw_out);
+      const auto msg = servo_arr.to_msg();
       bool success = can.write(msg);
       if(!success) printf("fail ");
-      for(auto e: servo.pwm) printf("%02x ", e);
       printf("\n");
       pre = now;
     }

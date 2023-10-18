@@ -9,6 +9,7 @@ constexpr uint32_t servo_can_id = 140;
 CAN can{PA_11, PA_12, (int)1e6};
 // CAN can{PB_12, PB_13, (int)1e6};
 // CANMessage msg;
+DigitalIn button{BUTTON1};
 
 // Struct definition
 struct Servo {
@@ -32,9 +33,15 @@ int main() {
     auto now = HighResClock::now();
     static auto pre = now;
     if(now - pre > 20ms) {
+      if(button) {
+        for(auto& e: servo.pwm) e = 0xff;
+      } else {
+        for(auto& e: servo.pwm) e = 0x00;
+      }
       const auto msg = servo.to_msg();
       bool success = can.write(msg);
       if(!success) printf("fail ");
+      for(auto e: servo.pwm) printf("%02x ", e);
       printf("\n");
       pre = now;
     }

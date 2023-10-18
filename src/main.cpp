@@ -1,5 +1,7 @@
 #include <mbed.h>
 
+#include "Servo.hpp"
+
 // Const variable
 constexpr uint32_t servo_can_id = 140;
 
@@ -12,36 +14,6 @@ CAN can{PA_11, PA_12, (int)1e6};
 DigitalIn button{BUTTON1};
 
 // Struct definition
-struct Servo {
-  uint8_t operator=(const uint8_t deg) {
-    return raw_out = deg * 0xff / 180;
-  }
-  uint8_t raw_out;
-};
-struct ServoArray {
-  CANMessage to_msg() {
-    static_assert(sizeof(servo) <= 8);
-    return CANMessage{can_id, reinterpret_cast<const uint8_t*>(servo), sizeof(servo)};
-  }
-  auto begin() {
-    return std::begin(servo);
-  }
-  auto begin() const {
-    return std::begin(servo);
-  }
-  auto end() {
-    return std::end(servo);
-  }
-  auto end() const {
-    return std::end(servo);
-  }
-  auto& operator[](int idx) & {
-    return servo[idx];
-  }
-
-  uint32_t can_id;
-  Servo servo[8];
-};
 
 // Global variable
 ServoArray servo_arr{servo_can_id};
